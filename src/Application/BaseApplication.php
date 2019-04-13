@@ -2,12 +2,22 @@
 
 namespace Apitte\Core\Application;
 
+use Apitte\Core\ErrorHandler\IErrorHandler;
 use Apitte\Core\Http\ApiRequest;
 use Apitte\Core\Http\ApiResponse;
 use Contributte\Psr7\Psr7ServerRequestFactory;
+use Throwable;
 
 abstract class BaseApplication implements IApplication
 {
+
+	/** @var IErrorHandler */
+	private $errorHandler;
+
+	public function __construct(IErrorHandler $errorHandler)
+	{
+		$this->errorHandler = $errorHandler;
+	}
 
 	public function run(): void
 	{
@@ -17,7 +27,12 @@ abstract class BaseApplication implements IApplication
 
 	public function runWith(ApiRequest $request): void
 	{
-		$response = $this->dispatch($request);
+		try {
+			$response = $this->dispatch($request);
+		} catch (Throwable $exception) {
+			$response = $this->errorHandler->handle($exception);
+		}
+
 		$this->sendResponse($response);
 	}
 
